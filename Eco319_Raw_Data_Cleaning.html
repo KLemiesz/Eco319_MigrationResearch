@@ -123,7 +123,18 @@ $(document).ready(function () {
 </div>
 
 
+<pre class="r"><code>#Combine the unemployment data into one frame
+unemp_years = list(unemp_2010, unemp_2011, unemp_2012, unemp_2013, unemp_2014, unemp_2015, unemp_2016)
 
+unemp_08_16 &lt;- left_join(unemp_2008, unemp_2009, by= c(&quot;County_State_Name&quot;,&quot;State_FIPS_Code&quot;, &quot;County_FIPS_Code&quot;))
+
+for (unemp in unemp_years) {
+    unemp_08_16 &lt;- left_join(unemp_08_16, unemp, by= c(&quot;County_State_Name&quot;, &quot;State_FIPS_Code&quot;, &quot;County_FIPS_Code&quot;))
+}</code></pre>
+<pre class="r"><code>Election_2016 &lt;- rename(Election_2016, c(&quot;combined_fips&quot; = &quot;fips_code&quot;))
+
+#PROBLEMATIC
+#election_results &lt;-left_join(election_results, Election_2016[, &quot;state_abbr&quot;], by = &quot;fips_code&quot;, copy=TRUE)</code></pre>
 
 
 
