@@ -1,0 +1,74 @@
+---
+title: "Eco 319 Raw Data Cleaning"
+author: "Katie Lemiesz"
+date: "November 7, 2017"
+output: html_document
+---
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(dplyr)
+library(plyr)
+library(ggplot2)
+library(RColorBrewer)
+library(ggthemes)
+```
+
+```{r, include=FALSE, message=FALSE}
+#migrants per county, 2008-2016
+Migrant_data <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Migrants_in_County_data.csv")
+
+#election results 2016
+Election_2016 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Election Data from GitHub/2016_US_County_Level_Presidential_Results.csv")
+
+#election results 2008-2016
+election_results <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Election Data from GitHub/US_County_Level_Presidential_Results_08-16.csv")
+
+#wages by occupation by metro area 2016
+wages_by_metroArea_2016 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/2016_occu_wages_metroArea.csv")
+
+#unemployment rates by county, 2008-2016 (separate files)
+unemp_2008 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty08.csv")
+
+unemp_2009 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty09.csv")
+
+unemp_2010 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty10.csv")
+
+unemp_2011 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty11.csv")
+
+unemp_2012 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty12.csv")
+
+unemp_2013 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty13.csv")
+
+unemp_2014 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty14.csv")
+
+unemp_2015 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty15.csv")
+
+unemp_2016 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty16.csv")
+
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+#Combine the unemployment data into one frame
+unemp_years = list(unemp_2010, unemp_2011, unemp_2012, unemp_2013, unemp_2014, unemp_2015, unemp_2016)
+
+unemp_08_16 <- left_join(unemp_2008, unemp_2009, by= c("County_State_Name","State_FIPS_Code", "County_FIPS_Code"))
+
+for (unemp in unemp_years) {
+    unemp_08_16 <- left_join(unemp_08_16, unemp, by= c("County_State_Name", "State_FIPS_Code", "County_FIPS_Code"))
+}
+```
+
+```{r, message=FALSE, warning=FALSE}
+Election_2016 <- rename(Election_2016, c("combined_fips" = "fips_code"))
+
+#PROBLEMATIC
+#election_results <-left_join(election_results, Election_2016[, "state_abbr"], by = "fips_code", copy=TRUE)
+
+
+```
+
+
+
+
+
