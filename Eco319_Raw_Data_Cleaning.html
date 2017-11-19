@@ -123,18 +123,66 @@ $(document).ready(function () {
 </div>
 
 
+<pre class="r"><code>wages_years = list(wages_2012, wages_2013, wages_2014, wages_2015)
+
+county_wages &lt;- left_join(wages_2010, wages_2011, by = c(&quot;County&quot;, &quot;State&quot;, &quot;fips_code&quot;))
+
+for (wages in wages_years) {
+    county_wages &lt;- left_join(county_wages, wages, by = c(&quot;County&quot;, &quot;State&quot;, &quot;fips_code&quot;))
+}</code></pre>
 <pre class="r"><code>#Combine the unemployment data into one frame
+
 unemp_years = list(unemp_2010, unemp_2011, unemp_2012, unemp_2013, unemp_2014, unemp_2015, unemp_2016)
 
 unemp_08_16 &lt;- left_join(unemp_2008, unemp_2009, by= c(&quot;County_State_Name&quot;,&quot;State_FIPS_Code&quot;, &quot;County_FIPS_Code&quot;))
 
 for (unemp in unemp_years) {
     unemp_08_16 &lt;- left_join(unemp_08_16, unemp, by= c(&quot;County_State_Name&quot;, &quot;State_FIPS_Code&quot;, &quot;County_FIPS_Code&quot;))
-}</code></pre>
-<pre class="r"><code>Election_2016 &lt;- rename(Election_2016, c(&quot;combined_fips&quot; = &quot;fips_code&quot;))
+}
 
-#PROBLEMATIC
-#election_results &lt;-left_join(election_results, Election_2016[, &quot;state_abbr&quot;], by = &quot;fips_code&quot;, copy=TRUE)</code></pre>
+#unemp_08_16 &lt;- transform(unemp_08_16,County_State_Name = colsplit(County_State_Name, split =&quot;,&quot;, names = c(&quot;County&quot;, &quot;State&quot;)))
+
+unemp_08_16 &lt;- separate(data = unemp_08_16, col = County_State_Name, into = c(&quot;County&quot;, &quot;State&quot;), sep = &quot;,&quot;)
+
+#unemp_08_16 &lt;- rename(unemp_08_16, c(&quot;County_State_Name.County&quot;=&quot;County&quot;, &quot;County_State_Name.State&quot; = &quot;State&quot;))
+
+unemp_08_16 &lt;- mutate(unemp_08_16, fips_code = ((State_FIPS_Code *1000)+County_FIPS_Code))
+
+unemp_08_16 &lt;-subset(unemp_08_16, select= -c(State_FIPS_Code, County_FIPS_Code))</code></pre>
+<pre class="r"><code>#combine election data into one frame
+
+Election_2016 &lt;- rename(Election_2016, c(&quot;combined_fips&quot; = &quot;fips_code&quot;, &quot;county_name&quot;=&quot;county&quot;, &quot;votes_dem&quot;=&quot;votes_dem_2016&quot;, &quot;votes_gop&quot;=&quot;votes_gop_2016&quot;, &quot;total_votes&quot;=&quot;total_votes_2016&quot;, &quot;per_dem&quot;=&quot;percent_dem_2016&quot;, &quot;per_gop&quot;=&quot;percent_gop_2016&quot;, &quot;diff&quot;=&quot;party_diff_2016&quot;, &quot;per_point_diff&quot;=&quot;per_point_diff_2016&quot;, &quot;state_abbr&quot;=&quot;State&quot;))
+
+Election_2016 &lt;- subset(Election_2016, select = -c(X, party_diff_2016, per_point_diff_2016))
+
+Election_results &lt;-left_join(election_results, Election_2016, by = c(&quot;fips_code&quot;, &quot;county&quot;))
+  
+Election_results &lt;-rename(Election_results, c(&quot;county&quot;=&quot;County&quot;))</code></pre>
+<pre class="r"><code>#clean up Migration data
+#get rid of unnecessary columns, repeated data
+Migrant_data &lt;- subset(Migrant_data, select = -c(Round.County.Immigrants, Round.State.Immigrants, State.Immigrants))
+
+#change state names to abbreviations (for easier data joins)
+Migrant_data$State &lt;-state.abb[match(Migrant_data$State, state.name)]</code></pre>
+<pre class="r"><code>#combine Election and Migrant data by county, state
+County_data &lt;- left_join(Migrant_data, Election_results, by =c(&quot;County&quot;, &quot;State&quot;))
+
+#add the unemployment data
+#data missing for AK
+County_data &lt;- left_join(County_data, unemp_08_16, by = c(&quot;fips_code&quot;, &quot;County&quot;))
+
+County_data &lt;- subset(County_data, select = -c(State.y))
+
+County_data &lt;- rename(County_data, c(&quot;State.x&quot; = &quot;State&quot;))
+
+#add wage data
+County_data &lt;- left_join(County_data, county_wages, by = c(&quot;fips_code&quot;, &quot;County&quot;))
+
+County_data &lt;- subset(County_data, select = -c(State.y))
+
+County_data &lt;- rename(County_data, c(&quot;State.x&quot; = &quot;State&quot;))
+
+#Now all my information is in the dataset County_data</code></pre>
 
 
 

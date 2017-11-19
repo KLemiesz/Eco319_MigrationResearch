@@ -6,26 +6,46 @@ output: html_document
 ---
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
+#install.packages("rio")
+#install.packages("haven")
+library(haven)
 library(dplyr)
 library(plyr)
+library(stringr)
+library(tidyr)
+library(reshape)
 library(ggplot2)
 library(RColorBrewer)
 library(ggthemes)
+
 ```
 
 ```{r, include=FALSE, message=FALSE}
 #migrants per county, 2008-2016
 Migrant_data <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Migrants_in_County_data.csv")
 
+#---------------
 #election results 2016
 Election_2016 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Election Data from GitHub/2016_US_County_Level_Presidential_Results.csv")
 
 #election results 2008-2016
 election_results <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Election Data from GitHub/US_County_Level_Presidential_Results_08-16.csv")
 
-#wages by occupation by metro area 2016
-wages_by_metroArea_2016 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/2016_occu_wages_metroArea.csv")
+#---------------
+#wage brackets by county, 2010-2015
+wages_2010 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_wages_2010.csv")
+  
+wages_2011 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_wages_2011.csv")
 
+wages_2012 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_wages_2012.csv")
+
+wages_2013 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_wages_2013.csv")
+  
+wages_2014 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_wages_2014.csv")
+  
+wages_2015 <-read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_wages_2015.csv")
+
+#---------------
 #unemployment rates by county, 2008-2016 (separate files)
 unemp_2008 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty08.csv")
 
@@ -45,11 +65,36 @@ unemp_2015 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Econom
 
 unemp_2016 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty16.csv")
 
+#---------------
+#data on import and export competitions with China, by commuting zone
+#import_levels <- read_dta("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/import competition measure/dta/import_levels.dta", encoding = NULL)
+
+#export_levels <- read_dta("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/import competition measure/dta/export_levels.dta", encoding = NULL)
+
+#workfile_china_long <- read_dta("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/import competition measure/dta/workfile_china_long.dta", encoding = NULL)
+
+#workfile_china_preperiod <-read_dta("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/import competition measure/dta/workfile_china_preperiod.dta", encoding = NULL)
+
+#workfile_china <- read_dta("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/import competition measure/dta/workfile_china.dta", encoding = NULL)
+
 ```
+
+```{r, message=FALSE, warning=FALSE}
+wages_years = list(wages_2012, wages_2013, wages_2014, wages_2015)
+
+county_wages <- left_join(wages_2010, wages_2011, by = c("County", "State", "fips_code"))
+
+for (wages in wages_years) {
+    county_wages <- left_join(county_wages, wages, by = c("County", "State", "fips_code"))
+}
+
+```
+
 
 
 ```{r, message=FALSE, warning=FALSE}
 #Combine the unemployment data into one frame
+
 unemp_years = list(unemp_2010, unemp_2011, unemp_2012, unemp_2013, unemp_2014, unemp_2015, unemp_2016)
 
 unemp_08_16 <- left_join(unemp_2008, unemp_2009, by= c("County_State_Name","State_FIPS_Code", "County_FIPS_Code"))
@@ -57,18 +102,64 @@ unemp_08_16 <- left_join(unemp_2008, unemp_2009, by= c("County_State_Name","Stat
 for (unemp in unemp_years) {
     unemp_08_16 <- left_join(unemp_08_16, unemp, by= c("County_State_Name", "State_FIPS_Code", "County_FIPS_Code"))
 }
+
+#unemp_08_16 <- transform(unemp_08_16,County_State_Name = colsplit(County_State_Name, split =",", names = c("County", "State")))
+
+unemp_08_16 <- separate(data = unemp_08_16, col = County_State_Name, into = c("County", "State"), sep = ",")
+
+#unemp_08_16 <- rename(unemp_08_16, c("County_State_Name.County"="County", "County_State_Name.State" = "State"))
+
+unemp_08_16 <- mutate(unemp_08_16, fips_code = ((State_FIPS_Code *1000)+County_FIPS_Code))
+
+unemp_08_16 <-subset(unemp_08_16, select= -c(State_FIPS_Code, County_FIPS_Code))
+
 ```
 
 ```{r, message=FALSE, warning=FALSE}
-Election_2016 <- rename(Election_2016, c("combined_fips" = "fips_code"))
+#combine election data into one frame
 
-#PROBLEMATIC
-#election_results <-left_join(election_results, Election_2016[, "state_abbr"], by = "fips_code", copy=TRUE)
+Election_2016 <- rename(Election_2016, c("combined_fips" = "fips_code", "county_name"="county", "votes_dem"="votes_dem_2016", "votes_gop"="votes_gop_2016", "total_votes"="total_votes_2016", "per_dem"="percent_dem_2016", "per_gop"="percent_gop_2016", "diff"="party_diff_2016", "per_point_diff"="per_point_diff_2016", "state_abbr"="State"))
+
+Election_2016 <- subset(Election_2016, select = -c(X, party_diff_2016, per_point_diff_2016))
+
+Election_results <-left_join(election_results, Election_2016, by = c("fips_code", "county"))
+  
+Election_results <-rename(Election_results, c("county"="County"))
 
 
 ```
 
 
+```{r, message=FALSE, warning=FALSE}
+#clean up Migration data
+#get rid of unnecessary columns, repeated data
+Migrant_data <- subset(Migrant_data, select = -c(Round.County.Immigrants, Round.State.Immigrants, State.Immigrants))
 
+#change state names to abbreviations (for easier data joins)
+Migrant_data$State <-state.abb[match(Migrant_data$State, state.name)]
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+#combine Election and Migrant data by county, state
+County_data <- left_join(Migrant_data, Election_results, by =c("County", "State"))
+
+#add the unemployment data
+#data missing for AK
+County_data <- left_join(County_data, unemp_08_16, by = c("fips_code", "County"))
+
+County_data <- subset(County_data, select = -c(State.y))
+
+County_data <- rename(County_data, c("State.x" = "State"))
+
+#add wage data
+County_data <- left_join(County_data, county_wages, by = c("fips_code", "County"))
+
+County_data <- subset(County_data, select = -c(State.y))
+
+County_data <- rename(County_data, c("State.x" = "State"))
+
+#Now all my information is in the dataset County_data
+```
 
 
