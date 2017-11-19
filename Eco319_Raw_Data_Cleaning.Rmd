@@ -8,12 +8,17 @@ output: html_document
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 #install.packages("rio")
 #install.packages("haven")
+
+#data manipulation packages
 library(haven)
 library(dplyr)
 library(plyr)
 library(stringr)
 library(tidyr)
 library(reshape)
+library(gmodels)
+
+#graphing packages
 library(ggplot2)
 library(RColorBrewer)
 library(ggthemes)
@@ -160,6 +165,10 @@ County_data <- subset(County_data, select = -c(State.y))
 County_data <- rename(County_data, c("State.x" = "State"))
 
 #Now all my information is in the dataset County_data
+```
+
+```{r}
+
 ```
 
 
