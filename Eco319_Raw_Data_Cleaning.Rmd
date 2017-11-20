@@ -1,7 +1,7 @@
 ---
-title: "Eco 319 Raw Data Cleaning"
+title: "Eco 319 Migration Research"
 author: "Katie Lemiesz"
-date: "November 7, 2017"
+date: "November 20, 2017"
 output: html_document
 ---
 
@@ -10,6 +10,9 @@ output: html_document
 #install.packages("haven")
 
 #data manipulation packages
+require(leaps)
+library(readr)
+library(mosaic)
 library(haven)
 library(dplyr)
 library(plyr)
@@ -17,6 +20,7 @@ library(stringr)
 library(tidyr)
 library(reshape)
 library(gmodels)
+library(openxlsx)
 
 #graphing packages
 library(ggplot2)
@@ -108,16 +112,12 @@ for (unemp in unemp_years) {
     unemp_08_16 <- left_join(unemp_08_16, unemp, by= c("County_State_Name", "State_FIPS_Code", "County_FIPS_Code"))
 }
 
-#unemp_08_16 <- transform(unemp_08_16,County_State_Name = colsplit(County_State_Name, split =",", names = c("County", "State")))
+unemp_08_16 <- unemp_08_16 %>%
+  separate(col = County_State_Name, into = c("County", "State"), sep = ",") %>%
+  mutate(fips_code = ((State_FIPS_Code *1000)+County_FIPS_Code))%>%
+  subset(select= -c(State_FIPS_Code, County_FIPS_Code))
 
-unemp_08_16 <- separate(data = unemp_08_16, col = County_State_Name, into = c("County", "State"), sep = ",")
-
-#unemp_08_16 <- rename(unemp_08_16, c("County_State_Name.County"="County", "County_State_Name.State" = "State"))
-
-unemp_08_16 <- mutate(unemp_08_16, fips_code = ((State_FIPS_Code *1000)+County_FIPS_Code))
-
-unemp_08_16 <-subset(unemp_08_16, select= -c(State_FIPS_Code, County_FIPS_Code))
-
+#write.xlsx(unemp_08_16, "/Users/katielemiesz/Desktop/unemp.xlsx")
 ```
 
 ```{r, message=FALSE, warning=FALSE}
@@ -127,10 +127,9 @@ Election_2016 <- rename(Election_2016, c("combined_fips" = "fips_code", "county_
 
 Election_2016 <- subset(Election_2016, select = -c(X, party_diff_2016, per_point_diff_2016))
 
-Election_results <-left_join(election_results, Election_2016, by = c("fips_code", "county"))
-  
-Election_results <-rename(Election_results, c("county"="County"))
-
+Election_results <- Election_2016 %>%
+  left_join(election_results, by = c("fips_code", "county"))%>%
+  rename(c("county"="County"))
 
 ```
 
@@ -149,26 +148,20 @@ Migrant_data$State <-state.abb[match(Migrant_data$State, state.name)]
 #combine Election and Migrant data by county, state
 County_data <- left_join(Migrant_data, Election_results, by =c("County", "State"))
 
-#add the unemployment data
-#data missing for AK
-County_data <- left_join(County_data, unemp_08_16, by = c("fips_code", "County"))
-
-County_data <- subset(County_data, select = -c(State.y))
-
-County_data <- rename(County_data, c("State.x" = "State"))
-
-#add wage data
-County_data <- left_join(County_data, county_wages, by = c("fips_code", "County"))
-
-County_data <- subset(County_data, select = -c(State.y))
-
-County_data <- rename(County_data, c("State.x" = "State"))
+#add the unemployment data, wage data
+County_data <- County_data%>%
+  left_join(unemp_08_16, by = c("fips_code", "County"))%>%
+  subset(select = -c(State.y))%>%
+  rename(c("State.x" = "State"))
+  
+County_data <- County_data%>%
+  left_join(county_wages, by = c("fips_code", "County"))%>%
+  subset(select = -c(State.y))%>%
+  rename(c("State.x" = "State"))
 
 #Now all my information is in the dataset County_data
+#Most of the data for AK is missing, so take this state out of the dataset
+#export my dataset to share
+write.xlsx(County_data, "/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_data.xlsx")
 ```
-
-```{r}
-
-```
-
 
