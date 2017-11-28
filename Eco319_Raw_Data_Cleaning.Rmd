@@ -21,12 +21,6 @@ library(tidyr)
 library(reshape)
 library(gmodels)
 library(openxlsx)
-
-#graphing packages
-library(ggplot2)
-library(RColorBrewer)
-library(ggthemes)
-
 ```
 
 ```{r, include=FALSE, message=FALSE}
@@ -75,6 +69,7 @@ unemp_2015 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Econom
 unemp_2016 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/Unemp Rates/laucnty16.csv")
 
 #---------------
+#I didn't have time to look at this data in depth
 #data on import and export competitions with China, by commuting zone
 #import_levels <- read_dta("/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/import competition measure/dta/import_levels.dta", encoding = NULL)
 
@@ -89,6 +84,7 @@ unemp_2016 <- read.csv("/Users/katielemiesz/Documents/Fall 2017/Migration Econom
 ```
 
 ```{r, message=FALSE, warning=FALSE}
+#combine all the wage data into one frame
 wages_years = list(wages_2012, wages_2013, wages_2014, wages_2015)
 
 county_wages <- left_join(wages_2010, wages_2011, by = c("County", "State", "fips_code"))
@@ -96,14 +92,10 @@ county_wages <- left_join(wages_2010, wages_2011, by = c("County", "State", "fip
 for (wages in wages_years) {
     county_wages <- left_join(county_wages, wages, by = c("County", "State", "fips_code"))
 }
-
 ```
-
-
 
 ```{r, message=FALSE, warning=FALSE}
 #Combine the unemployment data into one frame
-
 unemp_years = list(unemp_2010, unemp_2011, unemp_2012, unemp_2013, unemp_2014, unemp_2015, unemp_2016)
 
 unemp_08_16 <- left_join(unemp_2008, unemp_2009, by= c("County_State_Name","State_FIPS_Code", "County_FIPS_Code"))
@@ -117,12 +109,10 @@ unemp_08_16 <- unemp_08_16 %>%
   mutate(fips_code = ((State_FIPS_Code *1000)+County_FIPS_Code))%>%
   subset(select= -c(State_FIPS_Code, County_FIPS_Code))
 
-#write.xlsx(unemp_08_16, "/Users/katielemiesz/Desktop/unemp.xlsx")
 ```
 
 ```{r, message=FALSE, warning=FALSE}
 #combine election data into one frame
-
 Election_2016 <- rename(Election_2016, c("combined_fips" = "fips_code", "county_name"="county", "votes_dem"="votes_dem_2016", "votes_gop"="votes_gop_2016", "total_votes"="total_votes_2016", "per_dem"="percent_dem_2016", "per_gop"="percent_gop_2016", "diff"="party_diff_2016", "per_point_diff"="per_point_diff_2016", "state_abbr"="State"))
 
 Election_2016 <- subset(Election_2016, select = -c(X, party_diff_2016, per_point_diff_2016))
@@ -160,8 +150,8 @@ County_data <- County_data%>%
   rename(c("State.x" = "State"))
 
 #Now all my information is in the dataset County_data
-#Most of the data for AK is missing, so take this state out of the dataset
-#export my dataset to share
+
+#export my dataset to share, this is what I sent to you, Maggie
 write.xlsx(County_data, "/Users/katielemiesz/Documents/Fall 2017/Migration Economics/Research Project/Data/County_data.xlsx")
 ```
 
